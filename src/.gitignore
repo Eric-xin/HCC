@@ -1,0 +1,5 @@
+deprecated_models/
+__pycache__/
+inference_local.py
+CNN_enhanced_model.py
+model_quantize.py
