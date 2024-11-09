@@ -46,11 +46,13 @@ Note that the model is not included in the repository due to the file size limit
 **Output**: The model predicts the simplified structural formula of the hydrocarbon (The number of carbon atoms and hydrogen atoms in the hydrocarbon).
 
 **Input Examples**
+
 ![Input Examples](assets/img/data_sample.png)
 
 ## Model performance
 
 Training curve as follows:
+
 ![Training curve](assets/img/train_loss_CNN.png)
 
 The model performs well on the test set with an accuracy of 99%.
@@ -90,6 +92,7 @@ The model consists of a convolutional neural network (CNN) with the following ar
 - Softmax activation function for the output layer
 - 
 **Model visualization**
+
 ![Model visualization](assets/img/model_structure.png)
 
 ## Future work / To-do
@@ -117,6 +120,10 @@ The code is structured as follows:
 
 ## Data
 The data are prepared by myself. The dataset contains 2000 hydrocarbons with their corresponding structural pictures. The structural pictures are downloaded from the PubChem database. Special thanks to the PubChem researcher for providing help in parsing the special characters in the similes string.
+
+**Below is a workflow of how the data is prepared:**
+
+![Data Preparation Workflow](assets/img/workflow.jpg)
 
 ## Dataset and Model
 <!-- Since the datasets contains too many images, currently I cannot upload the dataset to the repository. Also, for the trained model, due to github's file size limitation, I can only upload the quantized version. If you are interested in the dataset or the full model, please feel free to contact me at [email](mailto:me@ericxin.eu) -->
