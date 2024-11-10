@@ -1,77 +1,73 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import json
+
+import sys
+import os
+# set the path to root directory
+# sys.path.append('..')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # from CNN_model import CNNModel
-from CNN_RNN_model import CNNRNNModel
-from dataloader import dataloader
+from src.CNN_model import CNNModel
+# try:
+#     from utils import dataloader
+# except ImportError:
+#     from ..utils import dataloader
+from utils import dataloader
 
-# Initialize TensorBoard writer
-writer = SummaryWriter()
-
-# Function to train the model
-def train_model(model, dataloader, criterion, optimizer, num_epochs=10, device='cpu'):
+def train_model(model, dataloader, device, learning_rate, num_epochs, loss_save, loss_dir, model_save, model_dir):
     model.to(device)
-    
+
+    # Loss and optimizer
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+    # List to store loss values
+    loss_values = []
+
+    # Training loop
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
-        
-        for i, (inputs, labels) in enumerate(tqdm(dataloader)):
-            inputs, labels = inputs.to(device), labels.to(device)
-            
-            # Zero the parameter gradients
+        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
+        for images, labels in progress_bar:
+            images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
-            
-            # Forward pass
-            outputs = model(inputs)
+            outputs = model(images)
+
             loss = criterion(outputs, labels)
-            
-            # Backward pass and optimize
             loss.backward()
             optimizer.step()
-            
             running_loss += loss.item()
-            
-            # Log the loss
-            if i % 10 == 9:  # Log every 10 batches
-                writer.add_scalar('training_loss', running_loss / 10, epoch * len(dataloader) + i)
-                running_loss = 0.0
-                writer.add_images('inputs', inputs[:4], epoch * len(dataloader) + i)
-                writer.add_images('ground_truth', labels[:4], epoch * len(dataloader) + i)
-                writer.add_images('predictions', outputs[:4], epoch * len(dataloader) + i)
-                
-            # Log predictions and ground truth images
-            # if i % 100 == 99:  # Log every 100 batches
-            #     writer.add_images('inputs', inputs[:4], epoch * len(dataloader) + i)
-            #     writer.add_images('ground_truth', labels[:4], epoch * len(dataloader) + i)
-            #     writer.add_images('predictions', outputs[:4], epoch * len(dataloader) + i)
+            progress_bar.set_postfix(loss=running_loss/len(dataloader))
         
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
-        
-        # # Save the model checkpoint
-        # torch.save(model.state_dict(), f'model_epoch_{epoch+1}.pth')
+        epoch_loss = running_loss / len(dataloader)
+        loss_values.append(epoch_loss)
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
 
-    # Save the final model
-    torch.save(model.state_dict(), '_model.pth')
-    
-    print('Finished Training')
-    # writer.flush() # Flush the TensorBoard writer to write the logs to disk
-    writer.close()
+    # Save the model
+    if model_save:
+        torch.save(model.state_dict(), model_dir)
 
-# Example usage
+    # Save the loss values to a file
+    if loss_save:
+        with open(loss_dir, 'w') as f:
+            json.dump(loss_values, f)
+
+    print("Finished Training, Model and Loss Values Saved")
+
 if __name__ == "__main__":
-    # Device configuration
-    # device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # Initialize model, criterion, and optimizer
-    # model = CNNModel()
-    model = CNNRNNModel()
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    
-    # Train the model
-    train_model(model, dataloader, criterion, optimizer, num_epochs=10, device=device)
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
+    model = CNNModel()
+    train_model(model=model,
+                dataloader=dataloader,
+                device=device,
+                learning_rate=0.0005,
+                num_epochs=35,
+                loss_save=True,
+                loss_dir='cache/loss_values.json',
+                model_save=True,
+                model_dir='cache/model.pth')
